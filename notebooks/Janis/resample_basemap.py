@@ -119,11 +119,11 @@ cc_total_resampled = resample_array(cc_total, aod550['lon'], aod550['lat'], orde
 t1 = time.time()
 print('Resampling using Cubic Spline interpolation took ' + str(t1-t0) + ' seconds.')
 
-ds_clouds_resampled = resample_dataset(ds_aerosol, ds_clouds)
-print(ds_clouds_resampled)
+#ds_clouds_resampled = resample_dataset(ds_aerosol, ds_clouds)
+#print(ds_clouds_resampled)
 #print(ds_clouds.cot_ctp_hist2d)
-cot_resampled =resample_array(ds_clouds.cot_ctp_hist2d, aod550['lon'], aod550['lat'], order=3)
-print(cot_resampled)
+#cot_resampled =resample_array(ds_clouds.cot_ctp_hist2d, aod550['lon'], aod550['lat'], order=3)
+#print(cot_resampled)
 
 print(cc_total)
 plt.figure(1)

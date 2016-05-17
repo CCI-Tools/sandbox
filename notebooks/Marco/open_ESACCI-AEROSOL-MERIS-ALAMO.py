@@ -1,5 +1,6 @@
 from datetime import datetime
 from glob import glob
+from .common import extract_time_index
 
 import xarray as xr
 import pandas as pd
@@ -14,18 +15,6 @@ These products have both the 'missing_value' attribute and the '_FillValue'
 DIR = "/hdd/home/marcoz/EOData/ccitbx/aerosol"
 FILE_GLOB = "200801*-ESACCI-L3C_AEROSOL-AOD-MERIS_ENVISAT-ALAMO-fv2.2.nc"
 file_paths = "%s/%s" % (DIR, FILE_GLOB)
-
-
-def extract_time_index(ds: xr.Dataset):
-    time_coverage_start = ds.attrs['time_coverage_start']
-    time_coverage_end = ds.attrs['time_coverage_end']
-    try:
-        #print(time_coverage_start, time_coverage_end)
-        time_start = datetime.strptime(time_coverage_start, "%Y%m%dT%H%M%SZ")
-        time_end = datetime.strptime(time_coverage_end, "%Y%m%dT%H%M%SZ")
-        return time_end
-    except ValueError:
-        return None
 
 
 def aerosol_open_mfdataset(paths, chunks=None):

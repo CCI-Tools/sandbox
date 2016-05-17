@@ -1,6 +1,6 @@
 from datetime import datetime
 from glob import glob
-from mz_common import extract_time_index, get_timeseries
+from mz_common import extract_time_index, timeseries, subset
 
 import xarray as xr
 import pandas as pd
@@ -18,7 +18,7 @@ FILE_GLOB = "*-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR-ENVISAT-ADV_MOTNHLY-v2.30.n
 file_paths = "%s/%s" % (DIR, FILE_GLOB)
 
 
-def aerosol_open_mfdataset(paths, chunks=None):
+def aerosol_open_mfdataset(paths, chunks=None) -> xr.Dataset:
     '''
      A special version of the xarray open_mfdataset function.
     '''
@@ -62,7 +62,7 @@ print("              time series")
 print("===================================================")
 t1 = datetime.now()
 da = ds['AOD550_mean']
-time_series = get_timeseries(da, lat=0, lon=0)
+time_series = timeseries(da, lat=0, lon=0)
 t2 = datetime.now()
 print("time for time_series: ", t2-t1)
 print(time_series)
@@ -71,6 +71,15 @@ t1 = datetime.now()
 time_series.load()
 t2 = datetime.now()
 print("time for time_series load: ", t2-t1)
+print("===================================================")
+print("               subset (lat/lon/time)")
+print("===================================================")
+sub = subset(ds,
+             lat_min=30., lat_max=45.,
+             lon_min=-60., lon_max=-45.,
+             time_min=datetime(2003, 1, 1), time_max=datetime(2004, 1, 1),
+             )
+print("dimensions: ", sub.dims)
 print("===================================================")
 
 
@@ -108,5 +117,9 @@ Attributes:
     valid_range: [ 0.  4.]
 ===================================================
 time for time_series load:  0:00:00.407940
+===================================================
+               subset (lat/lon/time)
+===================================================
+dimensions:  Frozen(SortedKeysDict({'time': 12, 'longitude': 15, 'latitude': 15}))
 ===================================================
 '''

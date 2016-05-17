@@ -1,6 +1,6 @@
 from datetime import datetime
 from glob import glob
-from mz_common import get_timeseries
+from mz_common import timeseries, subset
 
 import xarray as xr
 
@@ -50,7 +50,7 @@ print("              time series")
 print("===================================================")
 t1 = datetime.now()
 sst_da = ds['analysed_sst']
-time_series = get_timeseries(sst_da, lat=0, lon=0)
+time_series = timeseries(sst_da, lat=0, lon=0)
 t2 = datetime.now()
 print("time for time_series: ", t2-t1)
 print(time_series)
@@ -59,6 +59,15 @@ t1 = datetime.now()
 time_series.load()
 t2 = datetime.now()
 print("time for time_series load: ", t2-t1)
+print("===================================================")
+print("               subset (lat/lon/time)")
+print("===================================================")
+sub = subset(ds,
+             lat_min=30., lat_max=45.,
+             lon_min=-60., lon_max=-45.,
+             time_min=datetime(2000, 3, 1), time_max=datetime(2000, 4, 1),
+             )
+print("dimensions: ", sub.dims)
 print("===================================================")
 
 # print(ds)
@@ -102,6 +111,10 @@ Attributes:
     valid_min: [-300]
 ===================================================
 time for time_series load:  0:00:09.844377
+===================================================
+               subset (lat/lon/time)
+===================================================
+dimensions:  Frozen(SortedKeysDict({'lon': 300, 'time': 31, 'lat': 300, 'bnds': 2}))
 ===================================================
 '''
 

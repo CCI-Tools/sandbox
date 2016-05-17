@@ -1,6 +1,6 @@
 from datetime import datetime
 from glob import glob
-from .common import extract_time_index
+from mz_common import extract_time_index, get_timeseries
 
 import xarray as xr
 import pandas as pd

@@ -1,6 +1,6 @@
 from datetime import datetime
 from glob import glob
-from .common import extract_time_index
+from mz_common import extract_time_index, get_timeseries
 
 import xarray as xr
 import pandas as pd
@@ -55,9 +55,24 @@ ds.close()
 print("===================================================")
 print("using xarray + dask")
 ds = aerosol_open_mfdataset(file_paths, chunks={'latitude': 180, 'longitude': 360})
-ds.close()
 print("===================================================")
 print("dimensions: ", ds.dims)
+print("===================================================")
+print("              time series")
+print("===================================================")
+t1 = datetime.now()
+da = ds['AOD550_mean']
+time_series = get_timeseries(da, lat=0, lon=0)
+t2 = datetime.now()
+print("time for time_series: ", t2-t1)
+print(time_series)
+print("===================================================")
+t1 = datetime.now()
+time_series.load()
+t2 = datetime.now()
+print("time for time_series load: ", t2-t1)
+print("===================================================")
+
 
 # print(ds)
 
@@ -76,4 +91,22 @@ time to extract_time_index:  0:00:00.006279
 time to combine:             0:00:01.925776
 ===================================================
 dimensions:  Frozen(SortedKeysDict({'time': 117, 'latitude': 180, 'longitude': 360}))
+===================================================
+              time series
+===================================================
+time for time_series:  0:00:00.006065
+<xarray.DataArray 'AOD550_mean' (time: 117)>
+dask.array<getitem..., shape=(117,), dtype=float64, chunksize=(1,)>
+Coordinates:
+    latitude   float32 0.5
+    longitude  float32 0.5
+  * time       (time) datetime64[ns] 2002-08-31T23:59:59 2002-09-30T23:59:59 ...
+Attributes:
+    long_name: mean aerosol optical density at 550 nm
+    standard_name: atmosphere_optical_thickness_due_to_ambient_aerosol
+    units: 1
+    valid_range: [ 0.  4.]
+===================================================
+time for time_series load:  0:00:00.407940
+===================================================
 '''

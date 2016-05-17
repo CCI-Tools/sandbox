@@ -1,5 +1,6 @@
 from datetime import datetime
 from glob import glob
+from mz_common import get_timeseries
 
 import xarray as xr
 
@@ -44,6 +45,21 @@ print("using xarray + dask (1 year)")
 ds = sst_open_mfdataset("%s/%s" % (DIR, YEAR_FILE_GLOB), chunks={'lat': 900, 'lon': 1800}, engine='h5netcdf')
 print("===================================================")
 print("dimensions: ", ds.dims)
+print("===================================================")
+print("              time series")
+print("===================================================")
+t1 = datetime.now()
+sst_da = ds['analysed_sst']
+time_series = get_timeseries(sst_da, lat=0, lon=0)
+t2 = datetime.now()
+print("time for time_series: ", t2-t1)
+print(time_series)
+print("===================================================")
+t1 = datetime.now()
+time_series.load()
+t2 = datetime.now()
+print("time for time_series load: ", t2-t1)
+print("===================================================")
 
 # print(ds)
 
@@ -65,5 +81,27 @@ time to open:     0:00:16.738448
 time to combine:  0:00:06.852269
 ===================================================
 dimensions:  Frozen(SortedKeysDict({'lon': 7200, 'bnds': 2, 'time': 366, 'lat': 3600}))
+===================================================
+              time series
+===================================================
+time for time_series:  0:00:00.687437
+<xarray.DataArray 'analysed_sst' (time: 366)>
+dask.array<getitem..., shape=(366,), dtype=float64, chunksize=(1,)>
+Coordinates:
+    lon      float32 0.025
+    lat      float32 0.025
+  * time     (time) datetime64[ns] 2000-01-01T12:00:00 2000-01-02T12:00:00 ...
+Attributes:
+    long_name: analysed sea surface temperature
+    valid_max: [4500]
+    depth: 20 cm
+    standard_name: sea_water_temperature
+    source: ATSR<1,2>-ESACCI-L3U-v1.0, AATSR-ESACCI-L3U-v1.0, AVHRR<12,14,15,16,17,18>_G-ESACCI-L2P-v1.0, AVHRRMTA-ESACCI-L2P-v1.0
+    comment: SST analysis produced for ESA SST CCI project using the OSTIA system in reanalysis mode.
+    units: kelvin
+    valid_min: [-300]
+===================================================
+time for time_series load:  0:00:09.844377
+===================================================
 '''
 

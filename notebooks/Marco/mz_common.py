@@ -1,6 +1,7 @@
 from datetime import datetime
-import xarray as xr
+from glob import glob
 from typing import Union
+import xarray as xr
 
 
 def extract_time_index(ds: xr.Dataset) -> datetime:
@@ -63,3 +64,50 @@ def subset(xarray: Union[xr.DataArray,xr.Dataset],
         indexers['time'] = slice(time_min, time_max)
 
     return xarray.sel(**indexers)
+
+
+def ect_open_mfdataset(paths, chunks=None, concat_dim=None, preprocess=None, combine=None, engine=None, **kwargs):
+    '''
+        Adapted version of the xarray 'open_mfdataset' function.
+    '''
+    if isinstance(paths, str):
+        paths = sorted(glob(paths))
+    if not paths:
+        raise IOError('no files to open')
+
+    # open all datasets
+    t1 = datetime.now()
+    lock = xr.backends.api._default_lock(paths[0], None)
+    datasets = [xr.open_dataset(p, engine=engine, chunks=chunks, lock=lock, **kwargs) for p in paths]
+    print("num datasets: ", len(datasets))
+    file_objs = [ds._file_obj for ds in datasets]
+    t2 = datetime.now()
+    print("TIME for open        : ", t2-t1)
+
+    preprocessed_datasets = datasets
+    if preprocess is not None:
+        # pre-process datasets
+        t1 = datetime.now()
+        preprocessed_datasets = []
+        file_objs = []
+        for ds in datasets:
+            pds = preprocess(ds)
+            if (pds is not None):
+                preprocessed_datasets.append(pds)
+                file_objs.append(pds._file_obj)
+            else:
+                ds._file_obj.close()
+        t2 = datetime.now()
+        print("TIME for preprocess  : ", t2-t1)
+
+    # combine datasets into a single
+    t1 = datetime.now()
+    if combine is not None:
+        combined_ds = combine(datasets)
+    else:
+        combined_ds = xr.auto_combine(datasets, concat_dim=concat_dim)
+    t2 = datetime.now()
+    print("TIME for combine     : ", t2-t1)
+
+    combined_ds._file_obj = xr.backends.api._MultiFileCloser(file_objs)
+    return combined_ds

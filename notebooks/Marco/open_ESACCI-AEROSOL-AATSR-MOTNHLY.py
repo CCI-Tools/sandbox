@@ -1,9 +1,8 @@
 from datetime import datetime
-from glob import glob
-from mz_common import extract_time_index, timeseries, subset
-
+from mz_common import extract_time_index, timeseries, subset, ect_open_mfdataset
 import xarray as xr
 import pandas as pd
+
 
 '''
 "*-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR-ENVISAT-ADV_MOTNHLY-v2.30.nc"
@@ -18,69 +17,52 @@ FILE_GLOB = "*-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR-ENVISAT-ADV_MOTNHLY-v2.30.n
 file_paths = "%s/%s" % (DIR, FILE_GLOB)
 
 
-def aerosol_open_mfdataset(paths, chunks=None) -> xr.Dataset:
-    '''
-     A special version of the xarray open_mfdataset function.
-    '''
-    paths = sorted(glob(paths))
-
-    lock = xr.backends.api._default_lock(paths[0], None)
-    t1 = datetime.now()
-    datasets = [xr.open_dataset(p, lock=lock, chunks=chunks) for p in paths]
-    print("num datasets: ", len(datasets))
-    t2 = datetime.now()
-    file_objs = [ds._file_obj for ds in datasets]
-    print("time to open: ", t2-t1)
-
-    t1 = datetime.now()
+def combine(datasets):
     time_index = [extract_time_index(ds) for ds in datasets]
-    t2 = datetime.now()
-    print("time to extract_time_index: ", t2-t1)
-
-    t1 = datetime.now()
-    combined = xr.concat(datasets, pd.Index(time_index, name='time'))
-    combined._file_obj = xr.backends.api._MultiFileCloser(file_objs)
-    t2 = datetime.now()
-    print("time to combine: ", t2-t1)
-
-    return combined
-
-
+    return xr.concat(datasets, pd.Index(time_index, name='time'))
 
 
 print("===================================================")
 print("using xarray")
-ds = aerosol_open_mfdataset(file_paths)
+ds = ect_open_mfdataset(file_paths, combine=combine)
 ds.close()
 print("===================================================")
 print("using xarray + dask")
-ds = aerosol_open_mfdataset(file_paths, chunks={'latitude': 180, 'longitude': 360})
+ds = ect_open_mfdataset(file_paths, chunks={'latitude': 180, 'longitude': 360}, combine=combine)
 print("===================================================")
 print("dimensions: ", ds.dims)
 print("===================================================")
-print("              time series")
+print("              time series (lat/lon)")
 print("===================================================")
 t1 = datetime.now()
 da = ds['AOD550_mean']
 time_series = timeseries(da, lat=0, lon=0)
 t2 = datetime.now()
-print("time for time_series: ", t2-t1)
+print("TIME for time_series: ", t2-t1)
+print("")
 print(time_series)
-print("===================================================")
-t1 = datetime.now()
+print("")
 time_series.load()
-t2 = datetime.now()
-print("time for time_series load: ", t2-t1)
+t3 = datetime.now()
+print("TIME for ts_load     : ", t3-t2)
 print("===================================================")
 print("               subset (lat/lon/time)")
 print("===================================================")
+t1 = datetime.now()
 sub = subset(ds,
              lat_min=30., lat_max=45.,
              lon_min=-60., lon_max=-45.,
              time_min=datetime(2003, 1, 1), time_max=datetime(2004, 1, 1),
              )
+t2 = datetime.now()
+print("TIME for subset      : ", t2-t1)
+sub.load()
+t3 = datetime.now()
+print("TIME for subset load : ", t3-t2)
+print("")
 print("dimensions: ", sub.dims)
 print("===================================================")
+
 
 
 # print(ds)
@@ -88,24 +70,23 @@ print("===================================================")
 '''
 ===================================================
 using xarray
-num datasets:  117
-time to open:                0:00:00.961443
-time to extract_time_index:  0:00:00.009316
-time to combine:             0:00:06.431711
+num datasets:  116
+TIME for open        :  0:00:00.916795
+TIME for combine     :  0:00:02.849429
 ===================================================
 using xarray + dask
-num datasets:  117
-time to open:                0:00:01.560262
-time to extract_time_index:  0:00:00.006279
-time to combine:             0:00:01.925776
+num datasets:  116
+TIME for open        :  0:00:01.523071
+TIME for combine     :  0:00:02.081897
 ===================================================
-dimensions:  Frozen(SortedKeysDict({'time': 117, 'latitude': 180, 'longitude': 360}))
+dimensions:  Frozen(SortedKeysDict({'time': 116, 'longitude': 360, 'latitude': 180}))
 ===================================================
-              time series
+              time series (lat/lon)
 ===================================================
-time for time_series:  0:00:00.006065
-<xarray.DataArray 'AOD550_mean' (time: 117)>
-dask.array<getitem..., shape=(117,), dtype=float64, chunksize=(1,)>
+TIME for time_series:  0:00:00.005606
+
+<xarray.DataArray 'AOD550_mean' (time: 116)>
+dask.array<getitem..., shape=(116,), dtype=float64, chunksize=(1,)>
 Coordinates:
     latitude   float32 0.5
     longitude  float32 0.5
@@ -115,11 +96,14 @@ Attributes:
     standard_name: atmosphere_optical_thickness_due_to_ambient_aerosol
     units: 1
     valid_range: [ 0.  4.]
-===================================================
-time for time_series load:  0:00:00.407940
+
+TIME for ts_load     :  0:00:00.394161
 ===================================================
                subset (lat/lon/time)
 ===================================================
+TIME for subset      :  0:00:00.014428
+TIME for subset load :  0:00:00.704024
+
 dimensions:  Frozen(SortedKeysDict({'time': 12, 'longitude': 15, 'latitude': 15}))
 ===================================================
 '''

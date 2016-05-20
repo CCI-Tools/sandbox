@@ -3,7 +3,6 @@ from mz_common import extract_time_index, timeseries, subset, ect_open_mfdataset
 import xarray as xr
 import pandas as pd
 
-
 '''
 "*-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR-ENVISAT-ADV_MOTNHLY-v2.30.nc"
 
@@ -25,45 +24,23 @@ def combine(datasets):
 print("===================================================")
 print("using xarray")
 ds = ect_open_mfdataset(file_paths, combine=combine)
-ds.close()
-print("===================================================")
-print("using xarray + dask")
-ds = ect_open_mfdataset(file_paths, chunks={'latitude': 180, 'longitude': 360}, combine=combine)
-print("===================================================")
-print("dimensions: ", ds.dims)
-print("===================================================")
-print("              time series (lat/lon)")
-print("===================================================")
-t1 = datetime.now()
-da = ds['AOD550_mean']
-time_series = timeseries(da, lat=0, lon=0)
-t2 = datetime.now()
-print("TIME for time_series: ", t2-t1)
-print("")
-print(time_series)
-print("")
-time_series.load()
-t3 = datetime.now()
-print("TIME for ts_load     : ", t3-t2)
-print("===================================================")
-print("               subset (lat/lon/time)")
-print("===================================================")
-t1 = datetime.now()
+time_series = timeseries(ds['AOD550_mean'], lat=0, lon=0)
 sub = subset(ds,
              lat_min=30., lat_max=45.,
              lon_min=-60., lon_max=-45.,
              time_min=datetime(2003, 1, 1), time_max=datetime(2004, 1, 1),
              )
-t2 = datetime.now()
-print("TIME for subset      : ", t2-t1)
-sub.load()
-t3 = datetime.now()
-print("TIME for subset load : ", t3-t2)
-print("")
-print("dimensions: ", sub.dims)
+ds.close()
 print("===================================================")
-
-
+print("using xarray + dask")
+ds = ect_open_mfdataset(file_paths, chunks={'latitude': 180, 'longitude': 360}, combine=combine)
+time_series = timeseries(ds['AOD550_mean'], lat=0, lon=0)
+sub = subset(ds,
+             lat_min=30., lat_max=45.,
+             lon_min=-60., lon_max=-45.,
+             time_min=datetime(2003, 1, 1), time_max=datetime(2004, 1, 1),
+             )
+ds.close()
 
 # print(ds)
 

@@ -1,58 +1,42 @@
 from datetime import datetime
 from mz_common import timeseries, subset, ect_open_mfdataset
 
-
 DIR = "/hdd/home/marcoz/EOData/ccitbx/sst_many"
 YEAR_FILE_GLOB = "2000*120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.1.nc"
 SOME_DAYS_FILE_GLOB = "2000010[1,2,3]120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.1.nc"
 
-
 print("===================================================")
 print("using xarray (3 days)")
 ds = ect_open_mfdataset("%s/%s" % (DIR, SOME_DAYS_FILE_GLOB), engine='h5netcdf', concat_dim="time")
+ts = timeseries(ds['analysed_sst'], lat=0, lon=0)
+sub = subset(ds,
+             lat_min=30., lat_max=45.,
+             lon_min=-60., lon_max=-45.,
+             )
 ds.close()
+
 print("===================================================")
 print("using xarray + dask (3 days)")
-ds = ect_open_mfdataset("%s/%s" % (DIR, SOME_DAYS_FILE_GLOB), chunks={'lat': 900, 'lon': 1800}, engine='h5netcdf', concat_dim="time")
+ds = ect_open_mfdataset("%s/%s" % (DIR, SOME_DAYS_FILE_GLOB), chunks={'lat': 900, 'lon': 1800}, engine='h5netcdf',
+                        concat_dim="time")
+ts = timeseries(ds['analysed_sst'], lat=0, lon=0)
+sub = subset(ds,
+             lat_min=30., lat_max=45.,
+             lon_min=-60., lon_max=-45.,
+             )
 ds.close()
+
 print("===================================================")
 print("using xarray + dask (1 year)")
-ds = ect_open_mfdataset("%s/%s" % (DIR, YEAR_FILE_GLOB), chunks={'lat': 900, 'lon': 1800}, engine='h5netcdf', concat_dim="time")
-print("===================================================")
-print("dimensions: ", ds.dims)
-print("===================================================")
-print("              time series (lat/lon)")
-print("===================================================")
-t1 = datetime.now()
-sst_da = ds['analysed_sst']
-time_series = timeseries(sst_da, lat=0, lon=0)
-t2 = datetime.now()
-print("TIME for time_series: ", t2-t1)
-print("")
-print(time_series)
-print("")
-time_series.load()
-t3 = datetime.now()
-print("TIME for ts_load     : ", t3-t2)
-print("===================================================")
-print("               subset (lat/lon/time)")
-print("===================================================")
-t1 = datetime.now()
+ds = ect_open_mfdataset("%s/%s" % (DIR, YEAR_FILE_GLOB), chunks={'lat': 900, 'lon': 1800}, engine='h5netcdf',
+                        concat_dim="time")
+ts = timeseries(ds['analysed_sst'], lat=0, lon=0)
 sub = subset(ds,
              lat_min=30., lat_max=45.,
              lon_min=-60., lon_max=-45.,
              time_min=datetime(2003, 1, 1), time_max=datetime(2004, 1, 1),
              )
-t2 = datetime.now()
-print("TIME for subset      : ", t2-t1)
-sub.load()
-t3 = datetime.now()
-print("TIME for subset load : ", t3-t2)
-print("")
-print("dimensions: ", sub.dims)
-print("===================================================")
-
-# print(ds)
+ds.close()
 
 '''
 ===================================================
@@ -103,4 +87,3 @@ TIME for subset load :  0:00:00.187682
 dimensions:  Frozen(SortedKeysDict({'lat': 300, 'lon': 300, 'bnds': 2, 'time': 0}))
 ===================================================
 '''
-

@@ -32,16 +32,24 @@ def get_dim_name(xarray: Union[xr.DataArray,xr.Dataset], possible_names) -> str:
 
 
 def timeseries(xarray: Union[xr.DataArray, xr.Dataset], lat: float, lon: float) -> Union[xr.DataArray, xr.Dataset]:
+    t1 = datetime.now()
     lat_dim = get_lat_dim_name(xarray)
     lon_dim = get_lon_dim_name(xarray)
     indexers = {lat_dim : lat, lon_dim :lon}
-    return xarray.sel(method='nearest', **indexers)
+    time_series =  xarray.sel(method='nearest', **indexers)
+    t2 = datetime.now()
+    print("TIME for ts sel      : ", t2-t1)
+    time_series.load()
+    t3 = datetime.now()
+    print("TIME for ts load     : ", t3-t2)
+    return time_series
 
 
 def subset(xarray: Union[xr.DataArray,xr.Dataset],
            lat_min: float=None, lat_max: float=None,
            lon_min: float=None, lon_max: float=None,
            time_min: datetime=None, time_max: datetime=None):
+    t1 = datetime.now()
     indexers = {}
 
     if lat_min is not None and lat_max is not None:
@@ -63,7 +71,14 @@ def subset(xarray: Union[xr.DataArray,xr.Dataset],
     if time_min is not None and time_max is not None:
         indexers['time'] = slice(time_min, time_max)
 
-    return xarray.sel(**indexers)
+    sub = xarray.sel(**indexers)
+    t2 = datetime.now()
+    print("TIME for subset sel  : ", t2-t1)
+    sub.load()
+    t3 = datetime.now()
+    print("TIME for subset load : ", t3-t2)
+
+    return sub
 
 
 def ect_open_mfdataset(paths, chunks=None, concat_dim=None, preprocess=None, combine=None, engine=None, **kwargs):

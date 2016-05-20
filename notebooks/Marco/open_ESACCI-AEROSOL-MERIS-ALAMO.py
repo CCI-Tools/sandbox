@@ -30,8 +30,6 @@ def combine(datasets):
 print("===================================================")
 print("using xarray")
 ds = ect_open_mfdataset(file_paths, decode_cf=False, preprocess=preprocess, combine=combine)
-print("===================================================")
-print("dimensions: ", ds.dims)
 
 # print(ds)
 

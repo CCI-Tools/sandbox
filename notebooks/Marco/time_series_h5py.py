@@ -1,11 +1,14 @@
 import h5py
 import os
 import numpy
-import datetime
+from datetime import datetime
 
-
-file_path = "" # TODO
-var_name = "" # TODO
+DIR = "/hdd/home/marcoz/EOData/ccitbx/sst_many"
+# FILE_GLOB = "*-ESACCI-L3C_AEROSOL-AER_PRODUCTS-AATSR-ENVISAT-ADV_MOTNHLY-v2.30.nc"
+# file_paths = "%s/%s" % (DIR, FILE_GLOB)
+#
+# file_path = "" # TODO
+var_name = 'analysed_sst'
 longitude = 0
 latitude = 0
 
@@ -76,14 +79,14 @@ def _get_time_string_from_file_name(file_name):
 
 time_series = []
 
-dir_name = os.path.dirname(file_path)
-file_paths = os.listdir(os.path.dirname(file_path))
+t1 = datetime.now()
+file_paths = os.listdir(DIR)
 for file_name in file_paths:
     var_time = _get_time_string_from_file_name(file_name)
     if not var_time:
         continue
     try:
-        file_path = os.path.join(dir_name, file_name)
+        file_path = os.path.join(DIR, file_name)
         print('Opening ', file_path)
         dataset = h5py.File(file_path, 'r')
         variable = dataset[var_name]
@@ -118,5 +121,7 @@ for file_name in file_paths:
 
 sorted(time_series, key=lambda item: item[0])
 time_series = list(zip(*time_series))
+t2 = datetime.now()
 
 print('time_series = ' + str(time_series))
+print("TIME for time_series: ", t2-t1)

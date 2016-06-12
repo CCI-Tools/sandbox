@@ -28,7 +28,7 @@ def read_data(path):
     dataset = xr.open_mfdataset(path, concat_dim='time')
     return dataset
 
-def resample_slice(slice, grid_lon, grid_lat, order=1):
+def resample_slice(slice_, grid_lon, grid_lat, order=1):
     """
     Resample a single time slice of a larger xr.DataArray
 
@@ -38,7 +38,7 @@ def resample_slice(slice, grid_lon, grid_lat, order=1):
     :param order: Interpolation method 0 - nearest neighbour, 1 - bilinear (default), 3 - cubic spline
     :return: xr.DataArray, resampled slice
     """
-    result = basemap.interp(slice.values, slice['lon'].data, slice['lat'].data, grid_lon, grid_lat)
+    result = basemap.interp(slice_.values, slice_['lon'].data, slice_['lat'].data, grid_lon, grid_lat)
     return xr.DataArray(result)
 
 
@@ -57,11 +57,8 @@ def resample_array(array, lon, lat, order=1):
     if 'time' not in array.dims or 'lat' not in array.dims or 'lon' not in array.dims:
         return array
 
-    #if array.dims != (('time','lat','lon')):
-    #    return array
-
-    print(array.name)
-    print(array.dims)
+    #print(array.name)
+    #print(array.dims)
 
     grid_lon, grid_lat = np.meshgrid(lon.data, lat.data)
     kwargs = {'grid_lon':grid_lon, 'grid_lat':grid_lat}
@@ -79,22 +76,41 @@ def resample_dataset(master, slave, order=1):
     Resample slave onto the grid of the master.
     This does spatial resampling the whole dataset, e.g., all
     variables in the slave dataset that have (time, lat, lon) dimensions.
+    This method works only if both datasets have (time, lat, lon) dimensions. Due to
+    limitations in basemap interp.
+
+    Note that dataset attributes are not propagated due to currently undecided CDM attributes' set.
 
     :param master: xr.Dataset whose lat/lon coordinates are used as the resampling grid
     :param slave: xr.Dataset that will be resampled on the masters' grid
     :param order: Interpolation method to use. 0 - nearest neighbour, 1 - bilinear, 3 - cubic spline
     :return: xr.Dataset The resampled slave
     """
+    # Don't do anything if this the master Dataset has different dims than expected
+    if 'time' not in master.dims or 'lat' not in master.dims or 'lon' not in master.dims:
+        return slave
+
+    master_keys = master.dims.keys()
+    slave_keys = master.dims.keys()
+
+    # It is expected that slave and master have the same dimensions
+    if master_keys != slave_keys:
+        return slave
+
     lon = master['lon']
     lat = master['lat']
+
+#    slave['lon'] = master['lon']
+#    slave['lat'] = master['lat']
+
     kwargs = {'lon':lon, 'lat':lat, 'order':order}
-    return slave.apply(resample_array, **kwargs)
+    retset = slave.apply(resample_array, **kwargs)
+    return retset
 
 
 # Read in the data
 ds_clouds = read_data(CLOUD_ECV_PATH)
 ds_aerosol = read_data(AEROSOL_ECV_PATH)
-print(ds_clouds)
 
 # Rename the aerosol dataset's coordinates to correspond with clouds
 ds_aerosol.rename({'latitude':'lat', 'longitude':'lon'},inplace=True)
@@ -119,19 +135,18 @@ cc_total_resampled = resample_array(cc_total, aod550['lon'], aod550['lat'], orde
 t1 = time.time()
 print('Resampling using Cubic Spline interpolation took ' + str(t1-t0) + ' seconds.')
 
-#ds_clouds_resampled = resample_dataset(ds_aerosol, ds_clouds)
-#print(ds_clouds_resampled)
-#print(ds_clouds.cot_ctp_hist2d)
-#cot_resampled =resample_array(ds_clouds.cot_ctp_hist2d, aod550['lon'], aod550['lat'], order=3)
-#print(cot_resampled)
+ds_clouds = ds_clouds.drop(['hist_ctp','hist_phase','hist_cot','hist_cot_bin','hist_ctp_bin'])
+ds_clouds_resampled = resample_dataset(ds_aerosol, ds_clouds)
+print(ds_clouds_resampled)
 
-print(cc_total)
-plt.figure(1)
-plt.subplot(211)
-cc_total.isel(time=0).plot()
-cc_total_resampled = resample_array(cc_total, aod550['lon'], aod550['lat'], order=3)
-print(cc_total_resampled)
-plt.subplot(212)
-cc_total_resampled.isel(time=0).plot()
-plt.show()
+ds_aerosol_resampled = resample_dataset(ds_clouds, ds_aerosol)
+print(ds_aerosol_resampled)
+
+#plt.figure(1)
+#plt.subplot(211)
+#cc_total.isel(time=0).plot()
+#cc_total_resampled = resample_array(cc_total, aod550['lon'], aod550['lat'], order=3)
+#plt.subplot(212)
+#cc_total_resampled.isel(time=0).plot()
+#plt.show()
 

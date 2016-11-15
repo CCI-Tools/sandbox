@@ -89,24 +89,48 @@ def read_custom_opendap(path: str, variable: str, **args) -> xr.DataArray:
         
     return a
 
+@timeit
+def read_mixed(paths, variable: str, **args):
+    """
+    Reads variable from multiple files and mixed locations
+    """
+    ds = xr.open_mfdataset(paths, concat_dim='time')
+    v = ds[variable]
+    a = v[args] 
+    a.load()
+    
+    return a
+
     
 remote_data = read_custom_opendap(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1), lat=slice(0, 3600, 10), lon=slice(0, 3600,10))
 local_data = read_directly(_LOCAL_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1), lat=slice(0, 3600, 10), lon=slice(0, 3600, 10))
 remote2_data = read_directly(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1),lon=slice(0, 3600, 10), lat=slice(0, 3600, 10))
-
+mixed_data = read_mixed([_REMOTE_RESOURCE_,_LOCAL_RESOURCE_], 'sea_ice_fraction', time=slice(0,2,1),lon=slice(0, 3600, 10), lat=slice(0, 3600, 10))
 
 print(remote_data.coords)
 print(local_data.coords)
 print(remote2_data.coords)
-
+print(mixed_data.coords)
 
 
 remote_data = read_custom_opendap(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
 local_data = read_directly(_LOCAL_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
 remote2_data = read_directly(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
-
+mixed_data = read_mixed([_REMOTE_RESOURCE_,_LOCAL_RESOURCE_],  'sea_ice_fraction', time=slice(0,2), lat=slice(1200, 1560), lon=slice(1200, 1560))
 
 print(remote_data.coords)
 print(local_data.coords)
 print(remote2_data.coords)
+print(mixed_data.coords)
+
+
+remote_data = read_custom_opendap(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(0, 3600), lon=slice(0, 3600))
+local_data = read_directly(_LOCAL_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(0, 3600), lon=slice(0, 3600))
+remote2_data = read_directly(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1),lon=slice(0, 3600), lat=slice(0, 3600))
+mixed_data = read_mixed([_REMOTE_RESOURCE_,_LOCAL_RESOURCE_],  'sea_ice_fraction', time=slice(0,2),lon=slice(0, 3600), lat=slice(0, 3600))
+
+print(remote_data.coords)
+print(local_data.coords)
+print(remote2_data.coords)
+print(mixed_data.coords)
 

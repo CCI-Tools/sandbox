@@ -8,7 +8,7 @@ import time
 import xarray as xr
 
 
-_REMOTE_RESOURCE_ = 'http://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_esacci/sst/data/lt/Analysis/L4/v01.0/1991/09/17/19910917120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.0.nc'
+_REMOTE_RESOURCE_ = 'https://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_esacci/sst/data/lt/Analysis/L4/v01.0/1991/09/17/19910917120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.0.nc'
 # http download for local resource, http://esgf-data1.ceda.ac.uk/thredds/fileServer/esg_esacci/sst/data/lt/Analysis/L4/v01.0/1991/09/17/19910917120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.0.nc
 _LOCAL_RESOURCE_ = '/home/dev/19910917120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.0.nc'
 
@@ -79,7 +79,19 @@ def read_directly(path: str, variable: str, **args):
 
 
 @timeit
-def read_custom_opendap(path: str, variable: str, **args) -> xr.DataArray:
+def read_limited(path: str, variable: str, **args):
+    """
+    
+    """
+    ds = xr.open_dataset(path)
+    ds = ds.isel(**args)
+    a = ds[variable]
+    a.load()
+    
+    return a
+
+@timeit
+def read_custom_opendap(path: str, variable: str, **args):
     """
     Reads data from remote location using opendap protocol and data slicing
     """
@@ -105,32 +117,38 @@ def read_mixed(paths, variable: str, **args):
 remote_data = read_custom_opendap(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1), lat=slice(0, 3600, 10), lon=slice(0, 3600,10))
 local_data = read_directly(_LOCAL_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1), lat=slice(0, 3600, 10), lon=slice(0, 3600, 10))
 remote2_data = read_directly(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1),lon=slice(0, 3600, 10), lat=slice(0, 3600, 10))
+remote3_data = read_limited(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1,1),lon=slice(0, 3600, 10), lat=slice(0, 3600, 10))
 mixed_data = read_mixed([_REMOTE_RESOURCE_,_LOCAL_RESOURCE_], 'sea_ice_fraction', time=slice(0,2,1),lon=slice(0, 3600, 10), lat=slice(0, 3600, 10))
 
 print(remote_data.coords)
 print(local_data.coords)
 print(remote2_data.coords)
+print(remote3_data.coords)
 print(mixed_data.coords)
 
 
 remote_data = read_custom_opendap(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
 local_data = read_directly(_LOCAL_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
 remote2_data = read_directly(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
+remot4_3data = read_limited(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(1200, 1560), lon=slice(1200, 1560))
 mixed_data = read_mixed([_REMOTE_RESOURCE_,_LOCAL_RESOURCE_],  'sea_ice_fraction', time=slice(0,2), lat=slice(1200, 1560), lon=slice(1200, 1560))
 
 print(remote_data.coords)
 print(local_data.coords)
 print(remote2_data.coords)
+print(remote3_data.coords)
 print(mixed_data.coords)
 
 
 remote_data = read_custom_opendap(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(0, 3600), lon=slice(0, 3600))
 local_data = read_directly(_LOCAL_RESOURCE_, 'sea_ice_fraction', time=slice(0,1), lat=slice(0, 3600), lon=slice(0, 3600))
 remote2_data = read_directly(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1),lon=slice(0, 3600), lat=slice(0, 3600))
+remote3_data = read_limited(_REMOTE_RESOURCE_, 'sea_ice_fraction', time=slice(0,1),lon=slice(0, 3600), lat=slice(0, 3600))
 mixed_data = read_mixed([_REMOTE_RESOURCE_,_LOCAL_RESOURCE_],  'sea_ice_fraction', time=slice(0,2),lon=slice(0, 3600), lat=slice(0, 3600))
 
 print(remote_data.coords)
 print(local_data.coords)
 print(remote2_data.coords)
+print(remote3_data.coords)
 print(mixed_data.coords)
 
